@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-output "regional_lb" {
-  value       = var.regional_lb ? (var.dns_config != null ? format("http://%s", trimsuffix(google_dns_record_set.frontend-regional[""].name, ".")) : format("http://%s", module.xlb-regional[""].address)) : null
-  description = "Regional load balancer address."
-}
+functions-framework
+google-auth
+requests
+cryptography

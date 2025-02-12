@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,29 +12,88 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-locals {
-  env = "dev"
+module "project" {
+  source = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/project?ref=daily-2024.12.30"
+  billing_account = (var.project_create != null
+    ? var.project_create.billing_account_id
+    : null
+  )
+  parent = (var.project_create != null
+    ? var.project_create.parent
+    : null
+  )
+  name = var.project_id
+  services = [
+    "compute.googleapis.com",
+    "cloudfunctions.googleapis.com",
+    "run.googleapis.com",
+    "storage.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "iap.googleapis.com",
+    "certificatemanager.googleapis.com",
+  ]
+  project_create = var.project_create != null
 }
 
-provider "google" {
-  project = "${var.project}"
+
+resource "random_string" "random" {
+  count   = var.bucket.random_suffix == true ? 1 : 0
+  length  = 8
+  lower   = true
+  upper   = false
+  numeric = true
+  special = false
 }
 
-module "vpc" {
-  source  = "../../modules/vpc"
-  project = "${var.project}"
-  env     = "${local.env}"
+module "bucket" {
+  source     = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/gcs?ref=daily-2024.12.30"
+  project_id = module.project.project_id
+  name       = var.bucket.random_suffix == true ? format("%s-%s", var.bucket.name, random_string.random.0.result) : var.bucket.name
+  location   = var.region
+  versioning = false
+  labels     = {}
+
+  iam = {
+    "roles/storage.objectViewer" = ["allUsers"]
+  }
+
+  website = {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
+
 }
 
-module "http_server" {
-  source  = "../../modules/http_server"
-  project = "${var.project}"
-  subnet  = "${module.vpc.subnet}"
+module "service-account" {
+  source            = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/iam-service-account?ref=daily-2024.12.30"
+  project_id        = module.project.project_id
+  name              = var.backend.service_account
+  iam_project_roles = {}
 }
 
-module "firewall" {
-  source  = "../../modules/firewall"
-  project = "${var.project}"
-  subnet  = "${module.vpc.subnet}"
-}
+#module "backend" {
+#  source      = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/cloud-function-v2?ref=daily-2024.12.30"
+#  project_id  = module.project.project_id
+#  region      = var.region
+#  name        = var.backend.function_name
+#  bucket_name = module.build-bucket.name
+#
+#  service_account = module.service-account.email
+#
+#  function_config = {
+#    entry_point = "hello_function"
+#  }
+#  bundle_config = {
+#    path = format("%s/backend", path.module)
+#  }
+#
+#  environment_variables = var.iap_config.enabled == true ? {
+#    IAP_AUDIENCE = "true"
+#  } : {}
+#
+#  ingress_settings = "ALLOW_INTERNAL_AND_GCLB"
+#
+#  iam = {
+#    "roles/run.invoker" = ["allUsers"]
+#  }
+#}
