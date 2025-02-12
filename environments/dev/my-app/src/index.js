@@ -1,4 +1,5 @@
-# Copyright 2019 Google LLC
+/*
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+Created using create-react-app: https://create-react-app.dev/
+*/
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
 
-output "network" {
-  value = "${module.vpc.network}"
-}
-
-output "subnet" {
-  value = "${module.vpc.subnet}"
-}
-
-output "firewall_rule" {
-  value = "${module.firewall.firewall_rule}"
-}
-
-output "instance_name" {
-  value = "${module.http_server.instance_name}"
-}
-
-output "external_ip" {
-  value = "${module.http_server.external_ip}"
-}
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App backendUrl="" />
+  </React.StrictMode>
+);
